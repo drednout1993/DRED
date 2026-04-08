@@ -1,0 +1,17 @@
+# Основные зависимости
+PySide6>=6.5.0
+PyMySQL>=1.1.0
+bcrypt>=4.0.0
+python-docx>=0.8.11
+docx2pdf>=0.1.8
+
+# Утилиты
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+
+# Тестирование
+pytest>=7.4.0
+pytest-qt>=4.2.0
+
+# Сборка
+pyinstaller>=6.0.0
