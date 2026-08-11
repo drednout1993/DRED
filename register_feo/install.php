@@ -175,7 +175,13 @@ function performInstallation($createDemo = false) {
         // Создание config.php
         createConfigFile($install);
         
-        // Очистка сессии
+        // Сохраняем данные администратора для отображения на финальном экране
+        $_SESSION['install_complete'] = [
+            'admin_login' => $install['admin']['login'],
+            'admin_email' => $install['admin']['email']
+        ];
+        
+        // Очищаем сессию установки
         unset($_SESSION['install']);
         
         return true;
@@ -653,7 +659,8 @@ PHP;
                                 <p class="text-muted">Система "Реестры ФЭО" готова к работе.</p>
                                 
                                 <div class="alert alert-info mt-4">
-                                    <strong>Логин администратора:</strong> <?= e($_SESSION['install']['admin']['login'] ?? 'admin') ?><br>
+                                    <strong>Логин администратора:</strong> <?= e($_SESSION['install_complete']['admin_login'] ?? 'admin') ?><br>
+                                    <strong>Email:</strong> <?= e($_SESSION['install_complete']['admin_email'] ?? '') ?><br>
                                     <strong>Пароль:</strong> используйте заданный при установке
                                 </div>
                                 
