@@ -398,6 +398,47 @@ function createDemoData($pdo) {
         'econom1@example.local',
         'Экономист'
     ]);
+    
+    // Получаем ID созданного пользователя для реестров
+    $userId = $pdo->query("SELECT id FROM users WHERE login = 'user1'")->fetchColumn();
+    
+    // Демо реестр 1 (принятый)
+    $stmt = $pdo->prepare("
+        INSERT INTO registers (user_id, status, register_number, created_at, sent_at, reviewed_at, accepted_at, 
+                               transmitted_name, transmitted_position, accepted_name, accepted_position, receive_date_feo)
+        VALUES (?, 'accepted', 'R-0001', NOW(), NOW(), NOW(), NOW(), ?, ?, ?, ?, CURDATE())
+    ");
+    $stmt->execute([
+        $userId,
+        'Иванов И.И.',
+        'Менеджер',
+        'Петрова А.С.',
+        'Экономист'
+    ]);
+    
+    $registerId = $pdo->lastInsertId();
+    
+    // Позиции реестра 1
+    $stmt = $pdo->prepare("
+        INSERT INTO register_items (register_id, item_order, doc_name, doc_number, doc_date, contract_details, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([$registerId, 1, 'Акт выполненных работ №1', 'АВР-001', '2024-01-15', 'Договор №123 от 10.01.2024', '']);
+    $stmt->execute([$registerId, 2, 'Счет на оплату №456', 'СЧ-456', '2024-01-16', 'Договор №123 от 10.01.2024', '']);
+    
+    // Демо реестр 2 (на проверке)
+    $stmt = $pdo->prepare("
+        INSERT INTO registers (user_id, status, created_at, sent_at, transmitted_name, transmitted_position)
+        VALUES (?, 'new', NOW(), NOW(), ?, ?)
+    ");
+    $stmt->execute([
+        $userId,
+        'Иванов И.И.',
+        'Менеджер'
+    ]);
+    
+    $registerId2 = $pdo->lastInsertId();
+    $stmt->execute([$registerId2, 1, 'Накладная №789', 'НАК-789', '2024-02-01', 'Договор №456 от 25.01.2024', 'Срочно']);
 }
 
 /**
