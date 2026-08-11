@@ -161,3 +161,109 @@ function sendNotification($to, $subject, $body) {
     $mailer = new Mailer();
     return $mailer->send($to, $subject, $body);
 }
+
+/**
+ * Отправка уведомления о новом реестре экономистам
+ */
+function notifyEconomistsAboutNewRegister($pdo, $registerId) {
+    try {
+        // Получаем реестр
+        $stmt = $pdo->prepare("SELECT r.*, u.full_name as author_name FROM registers r JOIN users u ON r.user_id = u.id WHERE r.id = ?");
+        $stmt->execute([$registerId]);
+        $register = $stmt->fetch();
+        
+        if (!$register) {
+            return false;
+        }
+        
+        // Получаем экономистов с включёнными уведомлениями
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE role = 'economist' AND notify_email = 1");
+        $stmt->execute();
+        $economists = $stmt->fetchAll();
+        
+        foreach ($economists as $economist) {
+            $subject = 'Новый реестр на проверку от ' . e($register['author_name']);
+            $body = "
+                <h2>Новый реестр на проверку</h2>
+                <p><strong>Автор:</strong> " . e($register['author_name']) . "</p>
+                <p><strong>Передающий:</strong> " . e($register['transmitted_name']) . "</p>
+                <p><strong>Дата создания:</strong> " . formatDate($register['created_at']) . "</p>
+                <p><a href='" . getBaseUrl() . "/pages/register_view.php?id=" . $registerId . "'>Перейти к реестру</a></p>
+            ";
+            
+            sendNotification($economist['email'], $subject, $body);
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        logError('Ошибка отправки уведомлений: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Отправка уведомления о возврате реестра на доработку
+ */
+function notifyAuthorAboutRevision($pdo, $registerId, $comment) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT r.*, u.email as author_email, u.full_name as author_name 
+            FROM registers r 
+            JOIN users u ON r.user_id = u.id 
+            WHERE r.id = ?
+        ");
+        $stmt->execute([$registerId]);
+        $register = $stmt->fetch();
+        
+        if (!$register || empty($register['author_email']) || !$register['notify_email']) {
+            return false;
+        }
+        
+        $subject = 'Реестр возвращён на доработку';
+        $body = "
+            <h2>Реестр возвращён на доработку</h2>
+            <p><strong>Номер реестра:</strong> #" . $registerId . "</p>
+            <p><strong>Комментарий экономиста:</strong></p>
+            <blockquote>" . nl2br(e($comment)) . "</blockquote>
+            <p><a href='" . getBaseUrl() . "/pages/register_view.php?id=" . $registerId . "'>Перейти к реестру</a></p>
+        ";
+        
+        return sendNotification($register['author_email'], $subject, $body);
+    } catch (Exception $e) {
+        logError('Ошибка отправки уведомления о доработке: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Отправка уведомления о принятии реестра
+ */
+function notifyAuthorAboutAcceptance($pdo, $registerId, $registerNumber) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT r.*, u.email as author_email, u.full_name as author_name 
+            FROM registers r 
+            JOIN users u ON r.user_id = u.id 
+            WHERE r.id = ?
+        ");
+        $stmt->execute([$registerId]);
+        $register = $stmt->fetch();
+        
+        if (!$register || empty($register['author_email']) || !$register['notify_email']) {
+            return false;
+        }
+        
+        $subject = 'Реестр принят (номер: ' . e($registerNumber) . ')';
+        $body = "
+            <h2>Реестр принят</h2>
+            <p><strong>Номер реестра:</strong> " . e($registerNumber) . "</p>
+            <p><strong>Дата принятия:</strong> " . formatDate($register['accepted_at']) . "</p>
+            <p><a href='" . getBaseUrl() . "/pages/register_view.php?id=" . $registerId . "'>Перейти к реестру</a></p>
+        ";
+        
+        return sendNotification($register['author_email'], $subject, $body);
+    } catch (Exception $e) {
+        logError('Ошибка отправки уведомления о принятии: ' . $e->getMessage());
+        return false;
+    }
+}

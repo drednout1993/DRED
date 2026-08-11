@@ -10,6 +10,12 @@ if (!defined('ACCESS_GRANTED')) {
     die('Доступ запрещён');
 }
 
+// Настройки безопасности сессии
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_samesite', 'Strict');
+session_name('FEO_SESSION');
+
 // Запуск сессии
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -28,6 +34,8 @@ if (!file_exists(__DIR__ . '/config.php')) {
 
 // Подключение функций
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/mailer.php';
 
 // Установка локали
 setlocale(LC_ALL, 'ru_RU.UTF-8');
@@ -43,7 +51,13 @@ function getDbConnection() {
         }
         
         try {
-            $dsn = DB_DRIVER . ':host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            if (DB_DRIVER === 'mysql') {
+                $dsn = DB_DRIVER . ':host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            } elseif (DB_DRIVER === 'pgsql') {
+                $dsn = DB_DRIVER . ':host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME;
+            } else {
+                throw new Exception('Неподдерживаемый драйвер БД');
+            }
             
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -63,11 +77,13 @@ function getDbConnection() {
 
 // Проверка авторизации
 function requireAuth() {
-    if (!isUserLoggedIn()) {
+    if (!isLoggedIn()) {
         $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         header('Location: login.php');
         exit;
     }
+    // Обновляем данные пользователя в сессии
+    getCurrentUser();
 }
 
 // Проверка роли
@@ -78,7 +94,8 @@ function requireRole($roles) {
         $roles = [$roles];
     }
     
-    if (!in_array(getCurrentUserRole(), $roles)) {
+    $userRole = getCurrentUserRole();
+    if (!$userRole || !in_array($userRole, $roles)) {
         showErrorPage(403, 'Доступ запрещён');
         exit;
     }
@@ -98,6 +115,11 @@ function getCurrentUser() {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND is_blocked = 0");
             $stmt->execute([$_SESSION['user_id']]);
             $user = $stmt->fetch();
+            
+            if ($user) {
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['user_full_name'] = $user['full_name'];
+            }
         } catch (Exception $e) {
             return null;
         }
@@ -107,7 +129,7 @@ function getCurrentUser() {
 }
 
 // Проверка входа
-function isUserLoggedIn() {
+function isLoggedIn() {
     return isset($_SESSION['user_id']) && getCurrentUser() !== null;
 }
 

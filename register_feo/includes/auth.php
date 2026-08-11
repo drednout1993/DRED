@@ -182,3 +182,141 @@ function updateProfile($userId, $fullName, $email, $position, $notifyEmail) {
         return ['success' => false, 'message' => 'Ошибка сервера'];
     }
 }
+
+/**
+ * Проверка авторизации
+ */
+function isLoggedIn() {
+    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+}
+
+/**
+ * Получение данных текущего пользователя
+ */
+function getCurrentUser() {
+    if (!isLoggedIn()) {
+        return null;
+    }
+    
+    try {
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        
+        if ($user) {
+            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['user_full_name'] = $user['full_name'];
+        }
+        
+        return $user;
+    } catch (Exception $e) {
+        logError('Ошибка получения данных пользователя: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Требует авторизации, перенаправляет на login при отсутствии
+ */
+function requireLogin() {
+    if (!isLoggedIn()) {
+        redirectWithMessage('/login.php', 'Требуется авторизация', 'warning');
+    }
+    
+    // Обновляем данные сессии
+    getCurrentUser();
+}
+
+/**
+ * Создание пользователя администратором
+ */
+function createUserByAdmin($login, $password, $fullName, $email, $position, $role, $priority = 0) {
+    try {
+        $pdo = getDbConnection();
+        
+        // Проверка существования логина
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE login = ?");
+        $stmt->execute([$login]);
+        if ($stmt->fetch()) {
+            return ['success' => false, 'message' => 'Пользователь с таким логином уже существует'];
+        }
+        
+        // Валидация роли
+        $validRoles = ['user', 'economist', 'admin'];
+        if (!in_array($role, $validRoles)) {
+            return ['success' => false, 'message' => 'Недопустимая роль'];
+        }
+        
+        // Хэширование пароля
+        $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+        
+        // Создание пользователя
+        $stmt = $pdo->prepare("
+            INSERT INTO users (login, password, full_name, email, position, role, priority, notify_email, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
+        ");
+        $stmt->execute([$login, $passwordHash, $fullName, $email, $position, $role, $priority]);
+        
+        return ['success' => true, 'user_id' => $pdo->lastInsertId()];
+    } catch (Exception $e) {
+        logError('Ошибка создания пользователя: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Ошибка сервера при создании пользователя'];
+    }
+}
+
+/**
+ * Обновление пользователя администратором
+ */
+function updateUserByAdmin($userId, $fullName, $email, $position, $role, $priority, $isBlocked) {
+    try {
+        $pdo = getDbConnection();
+        
+        // Валидация роли
+        $validRoles = ['user', 'economist', 'admin'];
+        if (!in_array($role, $validRoles)) {
+            return ['success' => false, 'message' => 'Недопустимая роль'];
+        }
+        
+        $stmt = $pdo->prepare("
+            UPDATE users 
+            SET full_name = ?, email = ?, position = ?, role = ?, priority = ?, is_blocked = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([$fullName, $email, $position, $role, (int)$priority, $isBlocked ? 1 : 0, $userId]);
+        
+        return ['success' => true, 'message' => 'Данные пользователя обновлены'];
+    } catch (Exception $e) {
+        logError('Ошибка обновления пользователя: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Ошибка сервера'];
+    }
+}
+
+/**
+ * Генерация случайного пароля
+ */
+function generateRandomPassword($length = 12) {
+    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    $password = '';
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $chars[random_int(0, strlen($chars) - 1)];
+    }
+    return $password;
+}
+
+/**
+ * Блокировка/разблокировка пользователя
+ */
+function toggleUserBlock($userId, $blocked) {
+    try {
+        $pdo = getDbConnection();
+        
+        $stmt = $pdo->prepare("UPDATE users SET is_blocked = ? WHERE id = ?");
+        $stmt->execute([$blocked ? 1 : 0, $userId]);
+        
+        return ['success' => true, 'message' => $blocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован'];
+    } catch (Exception $e) {
+        logError('Ошибка блокировки пользователя: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Ошибка сервера'];
+    }
+}

@@ -5,10 +5,9 @@
 
 define('ACCESS_GRANTED', true);
 require_once __DIR__ . '/includes/init.php';
-require_once __DIR__ . '/includes/auth.php';
 
 // Если уже авторизован - на дашборд
-if (isUserLoggedIn()) {
+if (isLoggedIn()) {
     header('Location: pages/dashboard.php');
     exit;
 }
@@ -17,22 +16,27 @@ $error = '';
 $login = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login = $_POST['login'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($login) || empty($password)) {
-        $error = 'Введите логин и пароль';
+    // Проверка CSRF токена
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Ошибка безопасности. Попробуйте ещё раз.';
     } else {
-        $result = login($login, $password);
+        $login = trim($_POST['login'] ?? '');
+        $password = $_POST['password'] ?? '';
         
-        if ($result['success']) {
-            // Перенаправление после успешного входа
-            $redirect = $_SESSION['redirect_after_login'] ?? 'pages/dashboard.php';
-            unset($_SESSION['redirect_after_login']);
-            header('Location: ' . $redirect);
-            exit;
+        if (empty($login) || empty($password)) {
+            $error = 'Введите логин и пароль';
         } else {
-            $error = $result['message'];
+            $result = login($login, $password);
+            
+            if ($result['success']) {
+                // Перенаправление после успешного входа
+                $redirect = $_SESSION['redirect_after_login'] ?? 'pages/dashboard.php';
+                unset($_SESSION['redirect_after_login']);
+                header('Location: ' . $redirect);
+                exit;
+            } else {
+                $error = $result['message'];
+            }
         }
     }
 }
@@ -59,6 +63,7 @@ ob_start();
                     <?php endif; ?>
 
                     <form method="POST" action="">
+                        <?= generateCsrfInput() ?>
                         <div class="mb-3">
                             <label for="login" class="form-label">Логин</label>
                             <input type="text" class="form-control" id="login" name="login" 

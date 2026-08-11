@@ -326,3 +326,114 @@ function cleanupLoginAttempts() {
         // Игнорируем ошибки очистки
     }
 }
+
+/**
+ * Получение соединения с БД
+ */
+function getDbConnection() {
+    global $pdo;
+    if (!isset($pdo)) {
+        throw new Exception('Database connection not initialized');
+    }
+    return $pdo;
+}
+
+/**
+ * Логирование ошибок
+ */
+function logError($message) {
+    $logFile = __DIR__ . '/../logs/error.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logMessage = "[$timestamp] $message\n";
+    error_log($logMessage, 3, $logFile);
+}
+
+/**
+ * Проверка CSRF токена
+ */
+function verifyCsrfToken($token) {
+    if (!isset($_SESSION['csrf_token'])) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Генерация CSRF токена для формы
+ */
+function generateCsrfInput() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return '<input type="hidden" name="csrf_token" value="' . e($_SESSION['csrf_token']) . '">';
+}
+
+/**
+ * Проверка прав доступа
+ */
+function checkRole($allowedRoles) {
+    if (!is_array($allowedRoles)) {
+        $allowedRoles = [$allowedRoles];
+    }
+    
+    if (!isLoggedIn()) {
+        redirectWithMessage('/login.php', 'Требуется авторизация', 'warning');
+    }
+    
+    $userRole = $_SESSION['user_role'] ?? '';
+    if (!in_array($userRole, $allowedRoles)) {
+        showErrorPage(403, 'Недостаточно прав для выполнения операции');
+    }
+}
+
+/**
+ * Проверка авторства реестра
+ */
+function isRegisterAuthor($registerId) {
+    if (!isLoggedIn()) {
+        return false;
+    }
+    
+    try {
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare("SELECT user_id FROM registers WHERE id = ?");
+        $stmt->execute([$registerId]);
+        $register = $stmt->fetch();
+        
+        return $register && $register['user_id'] == $_SESSION['user_id'];
+    } catch (Exception $e) {
+        logError('Ошибка проверки авторства: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Безопасное получение данных из POST
+ */
+function post($key, $default = '') {
+    return $_POST[$key] ?? $default;
+}
+
+/**
+ * Безопасное получение данных из GET
+ */
+function get($key, $default = '') {
+    return $_GET[$key] ?? $default;
+}
+
+/**
+ * Валидация email
+ */
+function isValidEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+/**
+ * Обрезка строки до определённой длины
+ */
+function truncateString($string, $length = 50, $suffix = '...') {
+    if (mb_strlen($string) <= $length) {
+        return $string;
+    }
+    return mb_substr($string, 0, $length) . $suffix;
+}
