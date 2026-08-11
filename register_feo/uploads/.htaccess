@@ -1,0 +1,16 @@
+# Запрет листинга и выполнения PHP в uploads
+Options -Indexes
+
+<IfModule mod_php.c>
+    php_flag engine Off
+</IfModule>
+
+<FilesMatch "\.(php|php5|phtml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

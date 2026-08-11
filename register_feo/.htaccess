@@ -1,0 +1,32 @@
+# Защита от прямого доступа к файлам
+Options -Indexes
+
+# Защита директорий
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Защита папок
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^templates/ - [F,L]
+    RewriteRule ^logs/ - [F,L]
+</IfModule>
+
+# Безопасность заголовков
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# PHP настройки
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log ../logs/php_errors.log
+</IfModule>
+
+# Защита файлов конфигурации
+<FilesMatch "^(config\.php|\.htaccess)$">
+    Require all denied
+</FilesMatch>
