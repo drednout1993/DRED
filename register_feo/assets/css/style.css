@@ -1,0 +1,241 @@
+/* Основные стили системы "Реестры ФЭО" */
+
+:root {
+    --sidebar-width: 250px;
+    --primary-color: #0d6efd;
+    --sidebar-bg-dark: #212529;
+    --sidebar-bg-light: #f8f9fa;
+}
+
+body {
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Боковая панель */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    padding: 20px 0;
+    overflow-y: auto;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.sidebar-dark {
+    background-color: var(--sidebar-bg-dark);
+    color: #fff;
+}
+
+.sidebar-light {
+    background-color: var(--sidebar-bg-light);
+    color: #212529;
+}
+
+.sidebar .nav-link {
+    color: inherit;
+    padding: 12px 20px;
+    border-radius: 5px;
+    margin: 2px 10px;
+    transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-dark .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.sidebar .nav-link i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+/* Основной контент */
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+/* Карточки статусов на дашборде */
+.status-card {
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+}
+
+.status-card .card-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+}
+
+/* Таблицы */
+.table-responsive {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Drag-and-drop зона */
+.dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.dropzone i {
+    font-size: 3rem;
+    color: #ccc;
+}
+
+/* Печатная форма */
+@media print {
+    .sidebar,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 0;
+    }
+
+    .print-register-sheet {
+        page-break-after: always;
+    }
+
+    .register-ticket {
+        border: 2px solid #000;
+        padding: 20px;
+        margin: 20px;
+    }
+}
+
+/* Тёмная тема */
+body.dark-mode {
+    background-color: #1a1a2e;
+    color: #eee;
+}
+
+body.dark-mode .card {
+    background-color: #16213e;
+    border-color: #0f3460;
+    color: #eee;
+}
+
+body.dark-mode .table {
+    color: #eee;
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+    color: #eee;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #0f3460;
+    border-color: #1a1a2e;
+    color: #eee;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    background-color: #16213e;
+    color: #eee;
+}
+
+body.dark-mode .modal-content {
+    background-color: #16213e;
+    color: #eee;
+}
+
+body.dark-mode .sidebar-light {
+    background-color: #16213e;
+    color: #eee;
+}
+
+/* Статусы реестров */
+.status-badge {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+.status-draft { background-color: #6c757d; color: #fff; }
+.status-new { background-color: #0dcaf0; color: #000; }
+.status-in_review { background-color: #ffc107; color: #000; }
+.status-revision { background-color: #fd7e14; color: #fff; }
+.status-accepted { background-color: #198754; color: #fff; }
+.status-deleted { background-color: #dc3545; color: #fff; }
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+/* Toast уведомления */
+.toast-container {
+    z-index: 1055;
+}
+
+/* Спиннер загрузки */
+.loading-spinner {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-spinner.show {
+    display: flex;
+}

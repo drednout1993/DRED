@@ -1,53 +1,46 @@
 ```
-# Python
-__pycache__/
+# Compiled and build artifacts
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.env
-*.env
-.env.local
-.env.*
-.envrc
-.pytest_cache/
-.mypy_cache/
-.coverage
-htmlcov/
-.coverage.*
-
-# Build artifacts
+__pycache__/
+*.o
+*.obj
 dist/
 build/
-*.egg-info/
+target/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+.env.*
 
-# Logs
+# Logs and temp files
 *.log
-
-# Temp files
 *.tmp
-*.temp
-*~
-
-# OS
-.DS_Store
-Thumbs.db
+*.swp
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# Dependencies
-node_modules/
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python specific
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# Web specific
+*.min.js
+*.min.css
 ```
